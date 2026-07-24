@@ -5,3 +5,7 @@ uploads/
 .env.production
 npm-debug.log*
 .DS_Store
+*.log
+login.json
+tmp/
+tmp-*.js

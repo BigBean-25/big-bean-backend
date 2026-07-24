@@ -1,0 +1,40 @@
+
+CREATE TABLE IF NOT EXISTS seo_pages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  page_key VARCHAR(100) NOT NULL UNIQUE,
+  page_name VARCHAR(150) NOT NULL,
+  page_path VARCHAR(255) NOT NULL,
+  meta_title VARCHAR(255) NULL,
+  meta_description TEXT NULL,
+  meta_keywords TEXT NULL,
+  canonical_url VARCHAR(500) NULL,
+  og_title VARCHAR(255) NULL,
+  og_description TEXT NULL,
+  og_image VARCHAR(500) NULL,
+  twitter_title VARCHAR(255) NULL,
+  twitter_description TEXT NULL,
+  twitter_image VARCHAR(500) NULL,
+  robots_index TINYINT(1) DEFAULT 1,
+  robots_follow TINYINT(1) DEFAULT 1,
+  schema_json LONGTEXT NULL,
+  status ENUM('active','inactive') DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT IGNORE INTO seo_pages (page_key, page_name, page_path, meta_title, meta_description) VALUES
+('home',             'Home',                    '/',                    'Big Bean Café Coffee Roasters | Best Café in Bengaluru',              'Visit Big Bean Café Coffee Roasters for handcrafted coffee, fresh food, desserts, events and cozy café experiences across Bengaluru outlets.'),
+('about',            'About Us',                '/about',               'About Big Bean Café | Coffee Roasters in Bengaluru',                  'Discover Big Bean Café Coffee Roasters, our story, coffee culture and passion for handcrafted beverages and café experiences across Bengaluru.'),
+('menu',             'Menu',                    '/menu',                'Big Bean Café Menu | Coffee, Food, Desserts & Beverages',             'Explore the Big Bean Café menu with handcrafted coffee, fresh beverages, café bites, desserts and all-day favourites across Bengaluru outlets.'),
+('outlets',          'Outlets',                 '/outlets',             'Big Bean Café Outlets in Bengaluru | Find Nearby Café',               'Find your nearest Big Bean Café outlet in Bengaluru. Visit us for fresh coffee, food, desserts, events and cozy café moments.'),
+('offers',           'Offers',                  '/offers',              'Big Bean Café Offers | Coffee Deals & Café Promotions',               'Check the latest Big Bean Café offers, combo deals, rewards and promotions across our Bengaluru outlets.'),
+('contact',          'Contact',                 '/contact',             'Contact Big Bean Café | Bengaluru Café Support',                      'Contact Big Bean Café Coffee Roasters for outlet information, corporate orders, franchise queries, events and customer support.'),
+('gallery',          'Gallery',                 '/gallery',             'Big Bean Café Gallery | Coffee, Food & Café Moments',                 'Browse Big Bean Café gallery and explore our coffee, food, café interiors and memorable moments from our Bengaluru outlets.'),
+('blog',             'Blog',                    '/blog',                'Big Bean Café Blog | Coffee Stories, News & Café Culture',            'Read Big Bean Café blog for coffee stories, brewing tips, café news, events updates and everything about the coffee culture in Bengaluru.'),
+('careers',          'Careers',                 '/careers',             'Careers at Big Bean Café | Join Our Coffee Team',                    'Build your career at Big Bean Café Coffee Roasters. Explore job openings and apply to join our passionate coffee and hospitality team.'),
+('franchise',        'Franchise',               '/franchise',           'Big Bean Café Franchise | Own a Coffee Shop in Bengaluru',           'Partner with Big Bean Café and own a premium coffee shop franchise in Bengaluru. Apply for franchise opportunities today.'),
+('corporate_orders', 'Corporate Orders',        '/corporate-orders',    'Big Bean Café Corporate Orders | Bulk Coffee & Catering',            'Order bulk coffee, beverages and café food for your office or corporate events. Contact Big Bean Café for corporate orders and catering.'),
+('reservations',     'Reservations',            '/reservations',        'Reserve a Table at Big Bean Café | Online Booking',                  'Book a table at Big Bean Café Bengaluru. Reserve your spot online for a coffee experience, celebrations or casual café visits.'),
+('merchandise',      'Merchandise',             '/merchandise',         'Big Bean Café Merchandise | Coffee Mugs, Beans & Gifts',             'Shop Big Bean Café merchandise including coffee mugs, beans, accessories and café-inspired gifts online.'),
+('privacy_policy',   'Privacy Policy',          '/privacy-policy',      'Privacy Policy | Big Bean Café',                                     'Read the Big Bean Café privacy policy to understand how we collect, use and protect your personal information.'),
+('terms_conditions', 'Terms & Conditions',      '/terms-and-conditions','Terms and Conditions | Big Bean Café',                               'Read Big Bean Café terms and conditions governing the use of our website, services and online orders.');

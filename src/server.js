@@ -9,12 +9,13 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
-// Security middleware
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
-}));
+// ── CORS helpers (must be before helmet and all routes) ─────────────────────
+const normalizeOrigin = (value) =>
+  String(value || '')
+    .trim()
+    .replace(/\/+$/, '')
+    .toLowerCase();
 
-// CORS — allow live domains + localhost + any extra origins from env
 const defaultAllowedOrigins = [
   'https://www.bigbeancafe.in',
   'https://bigbeancafe.in',
@@ -27,22 +28,49 @@ const defaultAllowedOrigins = [
 ];
 
 const envAllowedOrigins = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
   : [];
 
 const allowedOrigins = Array.from(
   new Set(
-    [...defaultAllowedOrigins, ...envAllowedOrigins, process.env.FRONTEND_URL].filter(Boolean)
+    [...defaultAllowedOrigins, ...envAllowedOrigins, process.env.FRONTEND_URL]
+      .filter(Boolean)
+      .map(normalizeOrigin)
   )
 );
 
 console.log('Allowed CORS origins:', allowedOrigins);
 
+// Manual normalized CORS middleware — runs before helmet, cors package, and all routes
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const normalizedOrigin = normalizeOrigin(origin);
+
+  if (origin && allowedOrigins.includes(normalizedOrigin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+  }
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  next();
+});
+
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
+
+// cors package — secondary layer
 const corsOptions = {
   origin(origin, callback) {
-    // Allow server-to-server / curl requests that send no Origin header
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (allowedOrigins.includes(normalizeOrigin(origin))) return callback(null, true);
     return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
   credentials: true,
@@ -52,25 +80,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-  }
-
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
-
-  next();
-});
-
 app.options(/.*/, cors(corsOptions));
 
 // Rate limiting

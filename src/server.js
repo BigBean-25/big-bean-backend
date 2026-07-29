@@ -133,19 +133,27 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files — with cross-origin headers so video/image media loads from frontend
+// CORS headers applied once, then two static roots tried in order:
+//   1. backend/uploads        (root-level, used on Hostinger)
+//   2. backend/src/uploads    (src-level, used locally)
+const uploadsStaticOpts = {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.mp4')) res.setHeader('Content-Type', 'video/mp4');
+    else if (filePath.endsWith('.webm')) res.setHeader('Content-Type', 'video/webm');
+    else if (filePath.endsWith('.mov')) res.setHeader('Content-Type', 'video/quicktime');
+  },
+};
+
 app.use('/uploads', (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Range');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
-}, express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.mp4')) res.setHeader('Content-Type', 'video/mp4');
-    else if (filePath.endsWith('.webm')) res.setHeader('Content-Type', 'video/webm');
-    else if (filePath.endsWith('.mov')) res.setHeader('Content-Type', 'video/quicktime');
-  }
-}));
+});
+
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), uploadsStaticOpts));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), uploadsStaticOpts));
 
 // Database connection (non-blocking for development)
 const { testConnection, pool } = require('./config/database');

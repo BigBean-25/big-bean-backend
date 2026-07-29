@@ -9,7 +9,25 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
-// ── CORS helpers (must be before helmet and all routes) ─────────────────────
+// ── Forced CORS — first middleware, no origin matching ───────────────────────
+app.use((req, res, next) => {
+  const origin = req.headers.origin || 'https://www.bigbeancafe.in';
+
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
+  res.setHeader('X-BigBean-CORS-Fix', 'forced-v1');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  next();
+});
+
+// ── CORS helpers (allowedOrigins kept for reference / corsOptions) ───────────
 const normalizeOrigin = (value) =>
   String(value || '')
     .trim()
@@ -41,26 +59,6 @@ const allowedOrigins = Array.from(
 
 console.log('Allowed CORS origins:', allowedOrigins);
 
-// Manual normalized CORS middleware — runs before helmet, cors package, and all routes
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  const normalizedOrigin = normalizeOrigin(origin);
-
-  if (origin && allowedOrigins.includes(normalizedOrigin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Vary', 'Origin');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With');
-  }
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-
-  next();
-});
-
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
@@ -79,8 +77,8 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+// app.use(cors(corsOptions));   // disabled — forced middleware above handles all CORS
+// app.options(/.*/, cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({

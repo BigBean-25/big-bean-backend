@@ -133,8 +133,9 @@ const getActiveEvents = async (req, res) => {
           ticket_types: eventTickets,
           outlet: outletsByEvent[e.id] || null,
         };
-      })
-      .filter(e => e.display_status !== 'closed');
+      });
+      // Note: no display_status filter here — SQL WHERE status='active' is the source of truth.
+      // Admin-active events must always appear regardless of whether dates are future or past.
 
     res.json({ success: true, data });
   } catch (error) {

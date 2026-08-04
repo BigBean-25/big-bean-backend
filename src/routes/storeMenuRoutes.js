@@ -20,6 +20,17 @@ function buildImageUrl(base, filename) {
   return `${base}/${filename}`;
 }
 
+function mapCategory(cat) {
+  const rawChildren = cat.childes || cat.children || cat.sub_categories || cat.subcategories || [];
+  return {
+    id: cat.id,
+    name: cat.name,
+    image: buildImageUrl(STORE_CATEGORY_IMAGE_BASE, cat.image),
+    banner_image: buildImageUrl(STORE_CATEGORY_IMAGE_BASE, cat.banner_image),
+    children: rawChildren.map(child => mapCategory(child)),
+  };
+}
+
 // GET /api/store-menu
 router.get('/', storeMenuController.getStoreMenu);
 
@@ -42,19 +53,7 @@ router.get('/categories', async (req, res) => {
     const json = await response.json();
     const rawCategories = Array.isArray(json) ? json : (json.data || json.categories || []);
 
-    const data = rawCategories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      image: buildImageUrl(STORE_CATEGORY_IMAGE_BASE, cat.image),
-      banner_image: buildImageUrl(STORE_CATEGORY_IMAGE_BASE, cat.banner_image),
-      children: (cat.childes || cat.children || []).map((child) => ({
-        id: child.id,
-        name: child.name,
-        image: buildImageUrl(STORE_CATEGORY_IMAGE_BASE, child.image),
-        banner_image: buildImageUrl(STORE_CATEGORY_IMAGE_BASE, child.banner_image),
-        children: [],
-      })),
-    }));
+    const data = rawCategories.map(cat => mapCategory(cat));
 
     return res.json({ success: true, data });
   } catch (err) {

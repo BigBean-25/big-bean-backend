@@ -37,11 +37,39 @@ router.get('/', storeMenuController.getStoreMenu);
 // GET /api/store-menu/categories
 router.get('/categories', async (req, res) => {
   try {
-    const url = `${STORE_API_BASE}/categories`;
-    const response = await fetch(url, { headers: storeHeaders });
+    const allRaw = [];
+    let page = 1;
+    let totalSize = Infinity;
+    const pageLimit = 50;
 
-    if (!response.ok) {
-      console.error(`[store-menu] categories fetch failed: ${response.status}`);
+    while (allRaw.length < totalSize) {
+      const url = `${STORE_API_BASE}/categories?limit=${pageLimit}&offset=${page}`;
+      const response = await fetch(url, { headers: storeHeaders });
+
+      if (!response.ok) {
+        console.error(`[store-menu] categories fetch failed: ${response.status}`);
+        break;
+      }
+
+      const json = await response.json();
+      const pageCategories = Array.isArray(json) ? json : (json.categories || json.data || []);
+
+      if (json.total_size != null) {
+        totalSize = Number(json.total_size);
+      } else {
+        totalSize = pageCategories.length;
+      }
+
+      if (pageCategories.length === 0) break;
+
+      allRaw.push(...pageCategories);
+      page += 1;
+
+      // Safety: prevent infinite loops
+      if (page > 20) break;
+    }
+
+    if (allRaw.length === 0) {
       return res.status(200).json({
         success: false,
         message: 'Live menu is available on our ordering platform.',
@@ -50,10 +78,7 @@ router.get('/categories', async (req, res) => {
       });
     }
 
-    const json = await response.json();
-    const rawCategories = Array.isArray(json) ? json : (json.data || json.categories || []);
-
-    const data = rawCategories.map(cat => mapCategory(cat));
+    const data = allRaw.map(cat => mapCategory(cat));
 
     return res.json({ success: true, data });
   } catch (err) {

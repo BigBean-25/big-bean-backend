@@ -120,7 +120,8 @@ const limiter = rateLimit({
         req.path.startsWith('/api/legal-pages') ||
         req.path.startsWith('/api/newsletter') ||
         req.path.startsWith('/api/health') ||
-        req.path.startsWith('/api/seo-pages')
+        req.path.startsWith('/api/seo-pages') ||
+        req.path.startsWith('/api/website-popups')
       )
     }
     return false
@@ -228,6 +229,8 @@ app.use('/api/admin/customers', require('./routes/adminCustomerRoutes'));
 app.use('/api/customer-support', require('./routes/customerSupportRoutes'));
 app.use('/api/admin-support', require('./routes/adminSupportRoutes'));
 app.use('/api/admin-notifications', require('./routes/adminNotificationRoutes'));
+app.use('/api/admin/website-popups', require('./routes/adminWebsitePopupRoutes'));
+app.use('/api/website-popups', require('./routes/publicWebsitePopupRoutes'));
 
 // Default route
 app.get('/api', (req, res) => {

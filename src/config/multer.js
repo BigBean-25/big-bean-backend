@@ -678,6 +678,26 @@ const careerHeroUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
+// Dedicated website-popups image uploader → uploads/website-popups/
+ensureDirectoryExists(path.join(__dirname, '../uploads/website-popups'));
+
+const popupStorage = multer.diskStorage({
+  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/website-popups')); },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `popup-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
+  }
+});
+const popupUpload = multer({
+  storage: popupStorage,
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only jpg, jpeg, png, webp images are allowed'), false);
+  },
+  limits: { fileSize: 2 * 1024 * 1024 }
+});
+
 // Career resume uploader → uploads/careers/resumes/
 ensureDirectoryExists(path.join(__dirname, '../uploads/careers/resumes'));
 
@@ -730,5 +750,6 @@ module.exports = {
   franchiseHeroUpload,
   corporateHeroUpload,
   legalPageUpload,
-  pageHeroUpload
+  pageHeroUpload,
+  popupUpload
 };

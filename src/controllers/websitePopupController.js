@@ -102,34 +102,65 @@ const ADMIN_COLS = `
 
 // ── PUBLIC: active popup ─────────────────────────────────────────────────────
 
+const normalizeDevice = (v) => {
+  if (!v) return 'all';
+  const s = String(v).toLowerCase().trim();
+  if (s === 'desktop') return 'desktop';
+  if (s === 'mobile')  return 'mobile';
+  return 'all';
+};
+
+const normalizePagesJson = (target_pages) => {
+  if (!target_pages) return null;
+  try {
+    const parsed = typeof target_pages === 'string' ? JSON.parse(target_pages) : target_pages;
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    const filtered = parsed.filter(p => p !== 'all');
+    return filtered.length === 0 ? null : JSON.stringify(filtered);
+  } catch {
+    return null;
+  }
+};
+
 const getActivePopup = async (req, res) => {
   try {
     const { page, device } = req.query;
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const reqDevice = normalizeDevice(device);
 
+    // Use MySQL NOW() — avoids UTC vs local-time mismatch on the server
     const rows = await executeQuery(
       `SELECT ${PUBLIC_COLS}, target_pages
        FROM website_popups
        WHERE status = 1
-         AND (start_at IS NULL OR start_at <= ?)
-         AND (end_at   IS NULL OR end_at   >= ?)
-       ORDER BY priority DESC, created_at DESC`,
-      [now, now]
+         AND (start_at IS NULL OR start_at <= NOW())
+         AND (end_at   IS NULL OR end_at   >= NOW())
+       ORDER BY priority DESC, created_at DESC`
     );
 
     let match = null;
     for (const row of rows) {
+      // Device targeting — 'all' matches any device
       if (device) {
-        const td = row.target_devices;
-        if (td === 'desktop' && device !== 'desktop') continue;
-        if (td === 'mobile'  && device !== 'mobile')  continue;
+        const td = normalizeDevice(row.target_devices);
+        if (td !== 'all') {
+          if (td !== reqDevice) continue;
+        }
       }
-      if (page && row.target_pages) {
-        let pages;
-        try { pages = typeof row.target_pages === 'string' ? JSON.parse(row.target_pages) : row.target_pages; }
-        catch { pages = null; }
-        if (Array.isArray(pages) && pages.length > 0 && !pages.includes('all') && !pages.includes(page)) continue;
+
+      // Page targeting — NULL or empty array means all pages
+      if (page) {
+        const rawPages = row.target_pages;
+        if (rawPages !== null && rawPages !== undefined) {
+          let pages;
+          try { pages = typeof rawPages === 'string' ? JSON.parse(rawPages) : rawPages; }
+          catch { pages = null; }
+          if (Array.isArray(pages) && pages.length > 0) {
+            const specific = pages.filter(p => p !== 'all');
+            if (specific.length > 0 && !specific.includes(page)) continue;
+          }
+        }
       }
+
       match = row;
       break;
     }
@@ -220,11 +251,8 @@ const createPopup = async (req, res) => {
     const slug    = await makeUniqueSlug(title);
     const linkOn  = boolVal(link_enabled);
 
-    let pagesJson = null;
-    if (target_pages) {
-      try { pagesJson = typeof target_pages === 'string' ? target_pages : JSON.stringify(target_pages); }
-      catch { pagesJson = null; }
-    }
+    const pagesJson = normalizePagesJson(target_pages);
+    const savedStatus = (status === undefined || status === null) ? 1 : (boolVal(status) ? 1 : 0);
 
     const result = await executeQuery(
       `INSERT INTO website_popups
@@ -250,11 +278,11 @@ const createPopup = async (req, res) => {
         Math.min(Math.max(parseInt(display_delay_ms) || 0, 0), 30000),
         ['every_visit','once_per_session','once_per_day','show_once'].includes(display_frequency) ? display_frequency : 'once_per_session',
         pagesJson,
-        ['all','desktop','mobile'].includes(target_devices) ? target_devices : 'all',
+        normalizeDevice(target_devices),
         parseInt(priority) || 0,
-        start_at || null,
-        end_at || null,
-        boolVal(status) || status === undefined ? 1 : 0,
+        start_at && String(start_at).trim() ? String(start_at).trim() : null,
+        end_at   && String(end_at).trim()   ? String(end_at).trim()   : null,
+        savedStatus,
         req.admin?.id || req.user?.id || null
       ]
     );
@@ -303,20 +331,15 @@ const updatePopup = async (req, res) => {
     if (image_clickable !== undefined) { fields.push('image_clickable = ?'); values.push(linkOn && boolVal(image_clickable) ? 1 : 0); }
     if (display_delay_ms !== undefined) { fields.push('display_delay_ms = ?'); values.push(Math.min(Math.max(parseInt(display_delay_ms) || 0, 0), 30000)); }
     if (display_frequency !== undefined) { fields.push('display_frequency = ?'); values.push(['every_visit','once_per_session','once_per_day','show_once'].includes(display_frequency) ? display_frequency : 'once_per_session'); }
-    if (target_devices !== undefined) { fields.push('target_devices = ?'); values.push(['all','desktop','mobile'].includes(target_devices) ? target_devices : 'all'); }
+    if (target_devices !== undefined) { fields.push('target_devices = ?'); values.push(normalizeDevice(target_devices)); }
     if (priority !== undefined) { fields.push('priority = ?'); values.push(parseInt(priority) || 0); }
-    if (start_at !== undefined) { fields.push('start_at = ?'); values.push(start_at || null); }
-    if (end_at   !== undefined) { fields.push('end_at = ?');   values.push(end_at   || null); }
+    if (start_at !== undefined) { fields.push('start_at = ?'); values.push(start_at && String(start_at).trim() ? String(start_at).trim() : null); }
+    if (end_at   !== undefined) { fields.push('end_at = ?');   values.push(end_at   && String(end_at).trim()   ? String(end_at).trim()   : null); }
     if (status   !== undefined) { fields.push('status = ?');   values.push(boolVal(status) ? 1 : 0); }
 
     if (target_pages !== undefined) {
-      let pj = null;
-      if (target_pages) {
-        try { pj = typeof target_pages === 'string' ? target_pages : JSON.stringify(target_pages); }
-        catch { pj = null; }
-      }
       fields.push('target_pages = ?');
-      values.push(pj);
+      values.push(normalizePagesJson(target_pages));
     }
 
     const files = req.files || {};

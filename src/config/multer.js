@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { getUploadDir } = require('./uploadPaths');
 
 // Ensure upload directories exist
 const ensureDirectoryExists = (dirPath) => {
@@ -10,11 +11,11 @@ const ensureDirectoryExists = (dirPath) => {
 };
 
 // Create upload directories
+// Note: menu-hero, events and offers directories are created on-demand by getUploadDir()
 ensureDirectoryExists(path.join(__dirname, '../uploads/images'));
 ensureDirectoryExists(path.join(__dirname, '../uploads/videos'));
 ensureDirectoryExists(path.join(__dirname, '../uploads/resumes'));
 ensureDirectoryExists(path.join(__dirname, '../uploads/outlets'));
-ensureDirectoryExists(path.join(__dirname, '../uploads/offers'));
 ensureDirectoryExists(path.join(__dirname, '../uploads/app-promos'));
 
 // Storage configuration
@@ -114,10 +115,10 @@ const outletUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5 MB
 });
 
-// Dedicated offer image uploader → uploads/offers/
+// Dedicated offer image uploader → UPLOAD_ROOT/offers/
 const offerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/offers'));
+    cb(null, getUploadDir('offers'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -166,12 +167,10 @@ const merchandiseUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5 MB
 });
 
-// Dedicated event image uploader → uploads/events/
-ensureDirectoryExists(path.join(__dirname, '../uploads/events'));
-
+// Dedicated event image uploader → UPLOAD_ROOT/events/
 const eventStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/events'));
+    cb(null, getUploadDir('events'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -245,12 +244,10 @@ const merchandiseCategoryUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5 MB
 });
 
-// Dedicated menu-hero image uploader → uploads/menu-hero/
-ensureDirectoryExists(path.join(__dirname, '../uploads/menu-hero'));
-
+// Dedicated menu-hero image uploader → UPLOAD_ROOT/menu-hero/
 const menuHeroStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/menu-hero'));
+    cb(null, getUploadDir('menu-hero'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

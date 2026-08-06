@@ -22,6 +22,20 @@ const sanitizeUrl = (url) => {
 
 const boolVal = (v) => v === true || v === 'true' || v === 1 || v === '1';
 
+const POPUP_UPLOAD_DIR = path.resolve(__dirname, '../uploads/website-popups');
+const tryDeleteUpload = (imgPath) => {
+  if (!imgPath) return;
+  const s = String(imgPath);
+  const filename = s.startsWith('uploads/website-popups/')
+    ? s.slice('uploads/website-popups/'.length)
+    : path.basename(s);
+  if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) return;
+  const full = path.join(POPUP_UPLOAD_DIR, filename);
+  if (full.startsWith(POPUP_UPLOAD_DIR) && fs.existsSync(full)) {
+    try { fs.unlinkSync(full); } catch { }
+  }
+};
+
 const BACKEND_URL = (process.env.BACKEND_URL || process.env.APP_URL || '').replace(/\/$/, '');
 
 const buildImageUrl = (img) => {
@@ -67,6 +81,18 @@ const ensureTable = async () => {
 };
 ensureTable().catch(err => console.error('[website_popups] table init error:', err.message));
 
+const ensureColumns = async () => {
+  const cols = [
+    `ALTER TABLE website_popups ADD COLUMN IF NOT EXISTS image_click_enabled TINYINT(1) NOT NULL DEFAULT 0`,
+    `ALTER TABLE website_popups ADD COLUMN IF NOT EXISTS image_click_url VARCHAR(2048) NULL`,
+    `ALTER TABLE website_popups ADD COLUMN IF NOT EXISTS image_click_new_tab TINYINT(1) NOT NULL DEFAULT 0`,
+  ];
+  for (const sql of cols) {
+    await executeQuery(sql).catch(() => {});
+  }
+};
+ensureColumns().catch(err => console.error('[website_popups] ensureColumns error:', err.message));
+
 // ── unique slug ──────────────────────────────────────────────────────────────
 
 const makeUniqueSlug = async (title, excludeId = null) => {
@@ -91,12 +117,14 @@ const PUBLIC_COLS = `
   id, title, slug, popup_type, short_description,
   desktop_image, mobile_image,
   link_enabled, button_text, button_url, open_in_new_tab, image_clickable,
+  image_click_enabled, image_click_url, image_click_new_tab,
   display_delay_ms, display_frequency, target_devices, priority`;
 
 const ADMIN_COLS = `
   id, title, slug, popup_type, short_description,
   desktop_image, mobile_image,
   link_enabled, button_text, button_url, open_in_new_tab, image_clickable,
+  image_click_enabled, image_click_url, image_click_new_tab,
   display_delay_ms, display_frequency,
   target_pages, target_devices, priority,
   start_at, end_at, status, created_by, created_at, updated_at`;
@@ -244,6 +272,11 @@ const createPopup = async (req, res) => {
       ? `uploads/website-popups/${files.mobile_image[0].filename}`
       : null;
 
+    const {
+      image_click_enabled, image_click_url, image_click_new_tab
+    } = req.body;
+    const imgClickOn = boolVal(image_click_enabled);
+
     if (start_at && end_at && new Date(end_at) <= new Date(start_at))
       return res.status(400).json({ success: false, message: 'End date must be after start date' });
 
@@ -258,10 +291,12 @@ const createPopup = async (req, res) => {
         (title, slug, popup_type, short_description,
          desktop_image, mobile_image,
          link_enabled, button_text, button_url, open_in_new_tab, image_clickable,
+         image_click_enabled, image_click_url, image_click_new_tab,
          display_delay_ms, display_frequency,
          target_pages, target_devices, priority,
          start_at, end_at, status, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      // values appended below
       [
         String(title).trim(),
         slug,
@@ -274,6 +309,9 @@ const createPopup = async (req, res) => {
         linkOn ? sanitizeUrl(button_url) : null,
         linkOn && boolVal(open_in_new_tab) ? 1 : 0,
         linkOn && boolVal(image_clickable) ? 1 : 0,
+        imgClickOn ? 1 : 0,
+        imgClickOn && image_click_url ? sanitizeUrl(image_click_url) : null,
+        imgClickOn && boolVal(image_click_new_tab) ? 1 : 0,
         Math.min(Math.max(parseInt(display_delay_ms) || 0, 0), 30000),
         ['every_visit','once_per_session','once_per_day','show_once'].includes(display_frequency) ? display_frequency : 'once_per_session',
         pagesJson,
@@ -298,8 +336,9 @@ const createPopup = async (req, res) => {
 const updatePopup = async (req, res) => {
   try {
     const { id } = req.params;
-    const existing = await executeQuery('SELECT id FROM website_popups WHERE id = ?', [id]);
-    if (!existing.length) return res.status(404).json({ success: false, message: 'Popup not found' });
+    const existingRows = await executeQuery('SELECT id, desktop_image, mobile_image FROM website_popups WHERE id = ?', [id]);
+    if (!existingRows.length) return res.status(404).json({ success: false, message: 'Popup not found' });
+    const existingRecord = existingRows[0];
 
     const {
       title, popup_type, short_description,
@@ -307,8 +346,10 @@ const updatePopup = async (req, res) => {
       display_delay_ms, display_frequency,
       target_pages, target_devices, priority,
       start_at, end_at, status,
-      remove_mobile_image
+      remove_mobile_image, remove_desktop_image,
+      image_click_enabled, image_click_url, image_click_new_tab
     } = req.body;
+    const imgClickOn = boolVal(image_click_enabled);
 
     const fields = [];
     const values = [];
@@ -341,10 +382,23 @@ const updatePopup = async (req, res) => {
       values.push(normalizePagesJson(target_pages));
     }
 
+    if (image_click_enabled !== undefined) { fields.push('image_click_enabled = ?'); values.push(imgClickOn ? 1 : 0); }
+    if (image_click_url     !== undefined) { fields.push('image_click_url = ?');     values.push(imgClickOn && image_click_url ? sanitizeUrl(image_click_url) : null); }
+    if (image_click_new_tab !== undefined) { fields.push('image_click_new_tab = ?'); values.push(imgClickOn && boolVal(image_click_new_tab) ? 1 : 0); }
+
     const files = req.files || {};
-    if (files.desktop_image) { fields.push('desktop_image = ?'); values.push(`uploads/website-popups/${files.desktop_image[0].filename}`); }
-    if (files.mobile_image)  { fields.push('mobile_image = ?');  values.push(`uploads/website-popups/${files.mobile_image[0].filename}`); }
-    if (boolVal(remove_mobile_image)) { fields.push('mobile_image = ?'); values.push(null); }
+    if (files.desktop_image) {
+      fields.push('desktop_image = ?');
+      values.push(`uploads/website-popups/${files.desktop_image[0].filename}`);
+      tryDeleteUpload(existingRecord.desktop_image);
+    }
+    if (files.mobile_image) {
+      fields.push('mobile_image = ?');
+      values.push(`uploads/website-popups/${files.mobile_image[0].filename}`);
+      tryDeleteUpload(existingRecord.mobile_image);
+    }
+    if (boolVal(remove_desktop_image) && !files.desktop_image) { fields.push('desktop_image = ?'); values.push(null); tryDeleteUpload(existingRecord.desktop_image); }
+    if (boolVal(remove_mobile_image)  && !files.mobile_image)  { fields.push('mobile_image = ?');  values.push(null); tryDeleteUpload(existingRecord.mobile_image); }
 
     if (!fields.length) return res.status(400).json({ success: false, message: 'No fields to update' });
 

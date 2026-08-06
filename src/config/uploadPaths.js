@@ -21,9 +21,9 @@ if (process.env.NODE_ENV === 'production' && !process.env.UPLOAD_ROOT) {
 }
 
 // ── Allowed modules for this helper ──────────────────────────────────────────
-// Only menu-hero, events, offers use this persistent-path system.
+// These modules write to UPLOAD_ROOT and use resolveUploadFile for deletion.
 // All other modules continue using their existing upload paths.
-const MANAGED_MODULES = new Set(['menu-hero', 'events', 'offers']);
+const MANAGED_MODULES = new Set(['menu-hero', 'events', 'offers', 'contact-hero', 'website-popups']);
 
 // ── getUploadDir(module) ──────────────────────────────────────────────────────
 // Returns the absolute filesystem path for a module's upload directory and

@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 const ensureTable = async () => {
   await executeQuery(`
@@ -131,12 +132,9 @@ const update = async (req, res) => {
       stat_3_value, stat_3_label, status, sort_order
     } = req.body;
     if (!title) return res.status(400).json({ success: false, message: 'Title is required' });
-    let image = existing[0].image;
+    const oldImage = existing[0].image;
+    let image = oldImage;
     if (req.file) {
-      if (image) {
-        const old = path.join(__dirname, '../', image);
-        if (fs.existsSync(old)) fs.unlinkSync(old);
-      }
       image = `uploads/contact-hero/${req.file.filename}`;
     }
     await executeQuery(`
@@ -157,6 +155,10 @@ const update = async (req, res) => {
       status || 'active', sort_order ? parseInt(sort_order) : 0,
       req.params.id
     ]);
+    if (req.file && oldImage) {
+      const oldPath = resolveUploadFile(oldImage);
+      if (oldPath && fs.existsSync(oldPath)) { try { fs.unlinkSync(oldPath); } catch {} }
+    }
     res.json({ success: true, message: 'Updated' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -168,11 +170,12 @@ const remove = async (req, res) => {
     await ensureTable();
     const existing = await executeQuery('SELECT * FROM contact_hero_banners WHERE id=?', [req.params.id]);
     if (!existing.length) return res.status(404).json({ success: false, message: 'Not found' });
-    if (existing[0].image) {
-      const imgPath = path.join(__dirname, '../', existing[0].image);
-      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
-    }
+    const imgToDelete = existing[0].image;
     await executeQuery('DELETE FROM contact_hero_banners WHERE id=?', [req.params.id]);
+    if (imgToDelete) {
+      const imgPath = resolveUploadFile(imgToDelete);
+      if (imgPath && fs.existsSync(imgPath)) { try { fs.unlinkSync(imgPath); } catch {} }
+    }
     res.json({ success: true, message: 'Deleted' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

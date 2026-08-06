@@ -1,6 +1,7 @@
 const path = require('path');
 const fs   = require('fs');
 const { executeQuery } = require('../config/database');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -22,18 +23,10 @@ const sanitizeUrl = (url) => {
 
 const boolVal = (v) => v === true || v === 'true' || v === 1 || v === '1';
 
-const POPUP_UPLOAD_DIR = path.resolve(__dirname, '../uploads/website-popups');
 const tryDeleteUpload = (imgPath) => {
   if (!imgPath) return;
-  const s = String(imgPath);
-  const filename = s.startsWith('uploads/website-popups/')
-    ? s.slice('uploads/website-popups/'.length)
-    : path.basename(s);
-  if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) return;
-  const full = path.join(POPUP_UPLOAD_DIR, filename);
-  if (full.startsWith(POPUP_UPLOAD_DIR) && fs.existsSync(full)) {
-    try { fs.unlinkSync(full); } catch { }
-  }
+  const full = resolveUploadFile(imgPath);
+  if (full && fs.existsSync(full)) { try { fs.unlinkSync(full); } catch {} }
 };
 
 const BACKEND_URL = (process.env.BACKEND_URL || process.env.APP_URL || '').replace(/\/$/, '');
@@ -442,19 +435,8 @@ const deletePopup = async (req, res) => {
     if (!rows.length) return res.status(404).json({ success: false, message: 'Popup not found' });
 
     await executeQuery('DELETE FROM website_popups WHERE id = ?', [req.params.id]);
-
-    const uploadDir = path.resolve(__dirname, '../uploads/website-popups');
-    const tryDelete = (imgPath) => {
-      if (!imgPath) return;
-      const filename = imgPath.replace(/^uploads\/website-popups\//, '');
-      if (filename.includes('..') || filename.includes('/')) return;
-      const full = path.join(uploadDir, filename);
-      if (full.startsWith(uploadDir) && fs.existsSync(full)) {
-        try { fs.unlinkSync(full); } catch { }
-      }
-    };
-    tryDelete(rows[0].desktop_image);
-    tryDelete(rows[0].mobile_image);
+    tryDeleteUpload(rows[0].desktop_image);
+    tryDeleteUpload(rows[0].mobile_image);
 
     res.json({ success: true, message: 'Popup deleted successfully' });
   } catch (err) {

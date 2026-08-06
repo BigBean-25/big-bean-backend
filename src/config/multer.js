@@ -404,12 +404,10 @@ const offersHeroUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// Dedicated contact-hero image uploader → uploads/contact-hero/
-ensureDirectoryExists(path.join(__dirname, '../uploads/contact-hero'));
-
+// Dedicated contact-hero image uploader → UPLOAD_ROOT/contact-hero/
 const contactHeroStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/contact-hero'));
+    cb(null, getUploadDir('contact-hero'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -675,11 +673,9 @@ const careerHeroUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// Dedicated website-popups image uploader → uploads/website-popups/
-ensureDirectoryExists(path.join(__dirname, '../uploads/website-popups'));
-
+// Dedicated website-popups image uploader → UPLOAD_ROOT/website-popups/
 const popupStorage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/website-popups')); },
+  destination: (req, file, cb) => { cb(null, getUploadDir('website-popups')); },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `popup-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);

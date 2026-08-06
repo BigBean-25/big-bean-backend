@@ -22,11 +22,12 @@ const sanitizeUrl = (url) => {
 
 const boolVal = (v) => v === true || v === 'true' || v === 1 || v === '1';
 
-const BACKEND_URL = (process.env.BACKEND_URL || process.env.APP_URL || 'http://localhost:5000').replace(/\/$/, '');
+const BACKEND_URL = (process.env.BACKEND_URL || process.env.APP_URL || '').replace(/\/$/, '');
 
 const buildImageUrl = (img) => {
   if (!img) return null;
   if (img.startsWith('http')) return img;
+  if (!BACKEND_URL) return img;
   return `${BACKEND_URL}/${img.replace(/^\/+/, '')}`;
 };
 
@@ -168,8 +169,6 @@ const getActivePopup = async (req, res) => {
     if (!match) return res.json({ success: true, data: null });
 
     const { target_pages: _tp, ...safe } = match;
-    safe.desktop_image = buildImageUrl(safe.desktop_image);
-    safe.mobile_image  = buildImageUrl(safe.mobile_image);
 
     res.json({ success: true, data: safe });
   } catch (err) {

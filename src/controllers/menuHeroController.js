@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 const ensureTable = async () => {
   await executeQuery(`
@@ -111,8 +112,8 @@ const update = async (req, res) => {
     let image = existing[0].image;
     if (req.file) {
       if (image && !image.startsWith('http')) {
-        const oldPath = path.join(__dirname, '../', image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        const oldPath = resolveUploadFile(image);
+        if (oldPath && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       image = `uploads/menu-hero/${req.file.filename}`;
     }
@@ -143,8 +144,8 @@ const remove = async (req, res) => {
     if (!existing.length) return res.status(404).json({ success: false, message: 'Not found' });
     const image = existing[0].image;
     if (image && !image.startsWith('http')) {
-      const filePath = path.join(__dirname, '../', image);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      const filePath = resolveUploadFile(image);
+      if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
     await executeQuery('DELETE FROM menu_hero_banners WHERE id = ?', [id]);
     res.json({ success: true, message: 'Deleted successfully' });

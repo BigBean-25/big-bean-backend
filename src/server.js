@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
+const { UPLOAD_ROOT } = require('./config/uploadPaths');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -134,9 +135,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Static files — with cross-origin headers so video/image media loads from frontend
-// CORS headers applied once, then two static roots tried in order:
-//   1. backend/uploads        (root-level, used on Hostinger)
-//   2. backend/src/uploads    (src-level, used locally)
+// Static roots served in order:
+//   1. UPLOAD_ROOT           — persistent directory (menu-hero, events, offers on production)
+//   2. backend/src/uploads   — default UPLOAD_ROOT locally; used by all other modules
+//   3. backend/uploads       — legacy root-level fallback (backward compatibility)
 const uploadsStaticOpts = {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.mp4')) res.setHeader('Content-Type', 'video/mp4');
@@ -153,8 +155,9 @@ app.use('/uploads', (req, res, next) => {
   next();
 });
 
-app.use('/uploads', express.static(path.join(__dirname, '../uploads'), uploadsStaticOpts));
+app.use('/uploads', express.static(UPLOAD_ROOT, uploadsStaticOpts));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), uploadsStaticOpts));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), uploadsStaticOpts));
 
 // Database connection (non-blocking for development)
 const { testConnection, pool } = require('./config/database');

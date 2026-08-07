@@ -1,14 +1,17 @@
 const STORE_API_BASE = process.env.STORE_API_BASE || 'https://admin.bigbeancafe.store/api/v1';
-const STORE_BRANCH_ID = process.env.STORE_BRANCH_ID || '1';
+const STORE_BRANCH_ID_DEFAULT = process.env.STORE_BRANCH_ID || '1';
 const STORE_PRODUCT_IMAGE_BASE = process.env.STORE_PRODUCT_IMAGE_BASE || 'https://admin.bigbeancafe.store/storage/app/public/product';
 const STORE_CATEGORY_IMAGE_BASE = process.env.STORE_CATEGORY_IMAGE_BASE || 'https://admin.bigbeancafe.store/storage/app/public/category';
 
-const storeHeaders = {
-  'Accept': 'application/json',
-  'Content-Type': 'application/json',
-  'branch-id': STORE_BRANCH_ID,
-  'Branch-Id': STORE_BRANCH_ID,
-};
+// Returns a fresh headers object per call — never mutate a shared object.
+function getStoreHeaders(branchId) {
+  return {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'branch-id': String(branchId),
+    'Branch-Id': String(branchId),
+  };
+}
 
 function buildImageUrl(base, filename) {
   if (!filename || filename === 'def.png' || filename === '') return null;
@@ -43,10 +46,10 @@ function formatProduct(product) {
   };
 }
 
-async function fetchProductsForCategory(categoryId) {
+async function fetchProductsForCategory(categoryId, branchId) {
   try {
     const url = `${STORE_API_BASE}/categories/products/${categoryId}?offset=1&limit=20&product_type=all`;
-    const response = await fetch(url, { headers: storeHeaders });
+    const response = await fetch(url, { headers: getStoreHeaders(branchId) });
 
     if (!response.ok) {
       console.error(`[store-menu] products fetch failed for category ${categoryId}: ${response.status}`);
@@ -65,7 +68,8 @@ async function fetchProductsForCategory(categoryId) {
 // GET /api/store-menu
 exports.getStoreMenu = async (req, res) => {
   try {
-    const response = await fetch(`${STORE_API_BASE}/categories`, { headers: storeHeaders });
+    const branchId = STORE_BRANCH_ID_DEFAULT;
+    const response = await fetch(`${STORE_API_BASE}/categories`, { headers: getStoreHeaders(branchId) });
 
     if (!response.ok) {
       console.error('[store-menu] categories fetch failed:', response.status);
@@ -89,7 +93,7 @@ exports.getStoreMenu = async (req, res) => {
 
     const categories = [];
     for (const cat of rawCategories.slice(0, 20)) {
-      const items = await fetchProductsForCategory(cat.id);
+      const items = await fetchProductsForCategory(cat.id, branchId);
       categories.push({
         id: cat.id,
         name: cat.name,

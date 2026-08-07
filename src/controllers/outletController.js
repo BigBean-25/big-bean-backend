@@ -2,13 +2,14 @@ const { executeQuery } = require('../config/database');
 
 /*
  * Actual outlets table columns:
- * id, name, address, phone, email, opening_hours,
- * latitude, longitude, image, status, sort_order,
+ * id, name, slug, address, phone, email, opening_hours,
+ * latitude, longitude, image, status, sort_order, store_branch_id,
  * created_at, updated_at
  *
- * NOTE: slug column added via migration. No description, city, state,
- *       postal_code, country, facilities, map_url, image_url columns.
- *       The image column is named "image" (not "image_url").
+ * NOTE: slug column added via migration. store_branch_id added via
+ *       add_store_branch_id_to_outlets.sql migration.
+ *       No description, city, state, postal_code, country, facilities,
+ *       map_url, image_url columns. Image column is named "image".
  */
 
 // Get all outlets
@@ -18,7 +19,7 @@ const getAllOutlets = async (req, res) => {
 
     let query = `SELECT id, name, slug, address, phone, email,
       opening_hours, latitude, longitude, image, status,
-      sort_order, created_at, updated_at FROM outlets`;
+      sort_order, store_branch_id, created_at, updated_at FROM outlets`;
     const params = [];
     const where = [];
 
@@ -55,9 +56,9 @@ const getOutletById = async (req, res) => {
     const { id } = req.params;
 
     const outlet = await executeQuery(
-      `SELECT id, name, address, phone, email, opening_hours,
+      `SELECT id, name, slug, address, phone, email, opening_hours,
        latitude, longitude, image, status, sort_order,
-       created_at, updated_at FROM outlets WHERE id = ?`,
+       store_branch_id, created_at, updated_at FROM outlets WHERE id = ?`,
       [id]
     );
 
@@ -122,7 +123,8 @@ const createOutlet = async (req, res) => {
       longitude,
       status,
       sort_order,
-      slug
+      slug,
+      store_branch_id
     } = req.body || {};
 
     const cleanName    = (name    || '').trim();
@@ -155,6 +157,19 @@ const createOutlet = async (req, res) => {
     const cleanSortOrder =
       sort_order === undefined || sort_order === null || sort_order === '' ? 0 : parseInt(sort_order, 10);
 
+    let cleanStoreBranchId = null;
+    if (store_branch_id !== undefined && store_branch_id !== null && store_branch_id !== '') {
+      const parsed = parseInt(store_branch_id, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        cleanStoreBranchId = parsed;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'store_branch_id must be a positive integer or empty'
+        });
+      }
+    }
+
     let cleanStatus = 'active';
     if (
       status === 'inactive' || status === 'Inactive' ||
@@ -172,10 +187,10 @@ const createOutlet = async (req, res) => {
 
     const result = await executeQuery(
       `INSERT INTO outlets
-        (name, slug, address, phone, email, opening_hours, latitude, longitude, image, status, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (name, slug, address, phone, email, opening_hours, latitude, longitude, image, status, sort_order, store_branch_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [cleanName, cleanSlug, cleanAddress, cleanPhone, cleanEmail, cleanOpeningHours,
-       cleanLatitude, cleanLongitude, image, cleanStatus, cleanSortOrder]
+       cleanLatitude, cleanLongitude, image, cleanStatus, cleanSortOrder, cleanStoreBranchId]
     );
 
     return res.status(201).json({
@@ -233,9 +248,26 @@ const updateOutlet = async (req, res) => {
 
     if (body.slug !== undefined) updateData.slug = (body.slug || '').trim().toLowerCase() || null;
 
+    if (body.store_branch_id !== undefined) {
+      const raw = body.store_branch_id;
+      if (raw === null || raw === '' || raw === 'null') {
+        updateData.store_branch_id = null;
+      } else {
+        const parsed = parseInt(raw, 10);
+        if (!Number.isNaN(parsed) && parsed > 0) {
+          updateData.store_branch_id = parsed;
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'store_branch_id must be a positive integer or empty'
+          });
+        }
+      }
+    }
+
     const allowedFields = [
       'name', 'slug', 'address', 'phone', 'email',
-      'opening_hours', 'latitude', 'longitude', 'status', 'sort_order', 'image'
+      'opening_hours', 'latitude', 'longitude', 'status', 'sort_order', 'image', 'store_branch_id'
     ];
 
     const updateFields = [];
@@ -341,6 +373,7 @@ const getActiveOutlets = async (req, res) => {
     const outlets = await executeQuery(
       `SELECT id, name, slug, address, phone, email, opening_hours,
        latitude, longitude, image, status, sort_order,
+       CASE WHEN store_branch_id IS NOT NULL AND store_branch_id > 0 THEN 1 ELSE 0 END AS menu_available,
        created_at, updated_at
        FROM outlets WHERE status = ? ORDER BY sort_order ASC, name ASC`,
       ['active']

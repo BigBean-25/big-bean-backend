@@ -152,6 +152,15 @@ const createOrder = async (req, res) => {
 
     const { event_id, event_date_id, ticket_type_id, customer_name, customer_phone, customer_email, notes, quantity } = req.body;
 
+    const email = String(customer_email || '').trim();
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required.' });
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    }
+
     const missing = [];
     if (!event_id) missing.push('event_id');
     if (!event_date_id) missing.push('event_date_id');
@@ -263,7 +272,7 @@ const createOrder = async (req, res) => {
         ticket_type_id,
         event_outlet_id,
         customer_name.trim(),
-        customer_email || null,
+        email,
         customer_phone.trim(),
         qty,
         ticket.price,
@@ -303,7 +312,7 @@ const createOrder = async (req, res) => {
         currency: rzpOrder.currency,
         customer_name,
         customer_phone,
-        customer_email: customer_email || null,
+        customer_email: email,
       },
     });
   } catch (error) {

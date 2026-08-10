@@ -711,6 +711,26 @@ const careerResumeUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
+const aboutFounderStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, getUploadDir('about-founders'));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `founder-${uniqueSuffix}${ext}`);
+  }
+});
+const aboutFounderUpload = multer({
+  storage: aboutFounderStorage,
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only JPG, PNG, WEBP images are allowed'), false);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
+
 module.exports = {
   upload,
   uploadSingle,
@@ -744,5 +764,6 @@ module.exports = {
   corporateHeroUpload,
   legalPageUpload,
   pageHeroUpload,
-  popupUpload
+  popupUpload,
+  aboutFounderUpload
 };

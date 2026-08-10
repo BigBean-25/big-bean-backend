@@ -43,6 +43,8 @@ const MANAGED_MODULES = new Set([
   'careers/resumes',
   // SEO
   'seo',
+  // About page
+  'about-founders',
 ]);
 
 // ── getUploadDir(module) ──────────────────────────────────────────────────────

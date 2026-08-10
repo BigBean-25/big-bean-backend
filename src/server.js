@@ -122,7 +122,8 @@ const limiter = rateLimit({
         req.path.startsWith('/api/newsletter') ||
         req.path.startsWith('/api/health') ||
         req.path.startsWith('/api/seo-pages') ||
-        req.path.startsWith('/api/website-popups')
+        req.path.startsWith('/api/website-popups') ||
+        req.path.startsWith('/api/about-founders')
       )
     }
     return false
@@ -202,6 +203,7 @@ app.use('/api/admin-permissions', require('./routes/adminPermissionRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/store-menu', require('./routes/storeMenuRoutes'));
 app.use('/api/about-hero', require('./routes/aboutHeroRoutes'));
+app.use('/api/about-founders', require('./routes/aboutFounderRoutes'));
 app.use('/api/menu-hero', require('./routes/menuHeroRoutes'));
 app.use('/api/menu-combos', require('./routes/menuComboRoutes'));
 app.use('/api/outlet-hero', require('./routes/outletHeroRoutes'));

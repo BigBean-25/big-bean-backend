@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 const ensureTable = async () => {
   await executeQuery(`
@@ -147,8 +148,8 @@ const update = async (req, res) => {
     const imagePath = req.file ? `uploads/gallery-hero/${req.file.filename}` : existing[0].image;
 
     if (req.file && existing[0].image) {
-      const oldPath = path.join(__dirname, '../', existing[0].image);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      const oldPath = resolveUploadFile(existing[0].image);
+      if (oldPath && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
     }
 
     await executeQuery(`
@@ -186,8 +187,8 @@ const deleteBanner = async (req, res) => {
     if (existing.length === 0) return res.status(404).json({ success: false, message: 'Banner not found' });
 
     if (existing[0].image) {
-      const imgPath = path.join(__dirname, '../', existing[0].image);
-      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+      const imgPath = resolveUploadFile(existing[0].image);
+      if (imgPath && fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
     }
 
     await executeQuery('DELETE FROM gallery_hero_banners WHERE id = ?', [id]);

@@ -1,10 +1,5 @@
 
 const { executeQuery } = require('../config/database');
-const path = require('path');
-const fs = require('fs');
-
-const uploadDir = path.join(__dirname, '..', 'uploads', 'seo');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 // GET /api/seo-pages — all rows
 const getAll = async (req, res) => {

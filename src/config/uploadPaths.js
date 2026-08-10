@@ -21,13 +21,33 @@ if (process.env.NODE_ENV === 'production' && !process.env.UPLOAD_ROOT) {
 }
 
 // ── Allowed modules for this helper ──────────────────────────────────────────
-// These modules write to UPLOAD_ROOT and use resolveUploadFile for deletion.
-// All other modules continue using their existing upload paths.
-const MANAGED_MODULES = new Set(['menu-hero', 'events', 'offers', 'contact-hero', 'website-popups']);
+// All runtime upload modules. Supports nested paths like 'careers/resumes'.
+const MANAGED_MODULES = new Set([
+  // Previously managed
+  'menu-hero', 'events', 'offers', 'contact-hero', 'website-popups',
+  // Home banner media (shared image/video folders)
+  'images', 'videos',
+  // Hero banners
+  'outlet-hero', 'offers-hero', 'gallery-hero', 'career-hero', 'events-hero',
+  'franchise-hero', 'corporate-hero', 'page-heroes', 'about-hero',
+  'reservation-hero', 'blog-hero',
+  // Content modules
+  'merchandise-banners', 'legal-pages', 'blog', 'app-promos',
+  // Gallery
+  'gallery',
+  // Merchandise
+  'merchandise', 'merchandise-categories',
+  // Other
+  'outlets', 'menu-combos',
+  // Nested
+  'careers/resumes',
+  // SEO
+  'seo',
+]);
 
 // ── getUploadDir(module) ──────────────────────────────────────────────────────
 // Returns the absolute filesystem path for a module's upload directory and
-// creates it if it does not already exist.
+// creates it if it does not already exist. Supports nested paths e.g. 'careers/resumes'.
 const getUploadDir = (module) => {
   if (!MANAGED_MODULES.has(module)) {
     throw new Error(`[uploadPaths] getUploadDir: unknown module "${module}". Allowed: ${[...MANAGED_MODULES].join(', ')}`);
@@ -43,7 +63,7 @@ const getUploadDir = (module) => {
 // Converts a DB-stored relative path like "uploads/events/file.jpg" to the
 // absolute filesystem path under UPLOAD_ROOT, e.g. "/persistent/events/file.jpg".
 // Returns null for HTTP/HTTPS URLs, null/empty input, or any path-traversal attempt.
-// Only resolves paths for MANAGED_MODULES — other modules are left unchanged.
+// Supports nested modules like 'careers/resumes' via progressive module matching.
 const resolveUploadFile = (dbPath) => {
   if (!dbPath || typeof dbPath !== 'string') return null;
   if (dbPath.startsWith('http://') || dbPath.startsWith('https://')) return null;
@@ -53,14 +73,24 @@ const resolveUploadFile = (dbPath) => {
   // Guard against path traversal
   if (normalized.includes('..')) return null;
 
-  // Expected: "uploads/<module>/<filename>"
+  // Expected: "uploads/<module>/<filename>" where module may be nested (e.g. 'careers/resumes')
   const parts = normalized.split('/');
   if (parts.length < 3 || parts[0] !== 'uploads') return null;
 
-  const module = parts[1];
-  const filename = parts.slice(2).join('/');
+  // Try progressively longer module paths to support nested modules
+  let module = null;
+  let filenameStartIdx = 0;
+  for (let depth = 1; depth < parts.length; depth++) {
+    const candidate = parts.slice(1, depth + 1).join('/');
+    if (MANAGED_MODULES.has(candidate)) {
+      module = candidate;
+      filenameStartIdx = depth + 1;
+      break;
+    }
+  }
+  if (!module) return null;
 
-  if (!MANAGED_MODULES.has(module)) return null;
+  const filename = parts.slice(filenameStartIdx).join('/');
   if (!filename || filename.includes('..') || filename.includes('/')) return null;
 
   return path.join(UPLOAD_ROOT, module, filename);

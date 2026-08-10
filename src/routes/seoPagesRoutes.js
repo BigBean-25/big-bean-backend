@@ -6,13 +6,10 @@ const settingsCtrl = require('../controllers/seoSettingsController');
 const { verifyAdminToken, requirePermission } = require('../middleware/authMiddleware');
 const multer  = require('multer');
 const path    = require('path');
-const fs      = require('fs');
-
-const uploadDir = path.join(__dirname, '..', 'uploads', 'seo');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const { getUploadDir } = require('../config/uploadPaths');
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
+  destination: (req, file, cb) => cb(null, getUploadDir('seo')),
   filename:    (req, file, cb) => {
     const ext = path.extname(file.originalname) || '.jpg';
     cb(null, `seo-${Date.now()}-${Math.round(Math.random()*1e5)}${ext}`);

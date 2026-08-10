@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 const ensureTable = async () => {
   await executeQuery(`
@@ -163,8 +164,8 @@ const update = async (req, res) => {
     
     // Delete old image if new one provided
     if (req.file && existing[0].image && existing[0].image !== imagePath) {
-      const oldImagePath = path.join(__dirname, '../', existing[0].image);
-      if (fs.existsSync(oldImagePath)) {
+      const oldImagePath = resolveUploadFile(existing[0].image);
+      if (oldImagePath && fs.existsSync(oldImagePath)) {
         fs.unlinkSync(oldImagePath);
       }
     }
@@ -218,8 +219,8 @@ const deleteBanner = async (req, res) => {
     
     // Delete image file
     if (existing[0].image) {
-      const imagePath = path.join(__dirname, '../', existing[0].image);
-      if (fs.existsSync(imagePath)) {
+      const imagePath = resolveUploadFile(existing[0].image);
+      if (imagePath && fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
       }
     }

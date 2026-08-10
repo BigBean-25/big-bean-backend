@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 const defaultPrivacyContent = `Introduction
 
@@ -155,8 +156,8 @@ async function ensureTable() {
 function deleteImageFile(imagePath) {
   if (!imagePath) return;
   try {
-    const fullPath = path.join(__dirname, '../../', imagePath);
-    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+    const fullPath = resolveUploadFile(imagePath);
+    if (fullPath && fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
   } catch {}
 }
 

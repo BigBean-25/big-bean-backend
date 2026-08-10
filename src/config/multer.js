@@ -24,9 +24,9 @@ const storage = multer.diskStorage({
     let uploadPath;
     
     if (file.mimetype.startsWith('image/')) {
-      uploadPath = path.join(__dirname, '../uploads/images');
+      uploadPath = getUploadDir('images');
     } else if (file.mimetype.startsWith('video/')) {
-      uploadPath = path.join(__dirname, '../uploads/videos');
+      uploadPath = getUploadDir('videos');
     } else if (file.mimetype.includes('application/pdf') || file.mimetype.includes('document')) {
       uploadPath = path.join(__dirname, '../uploads/resumes');
     } else {
@@ -93,7 +93,7 @@ const uploadResume = uploadSingle('resume');
 // Dedicated outlet image uploader → uploads/outlets/
 const outletStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/outlets'));
+    cb(null, getUploadDir('outlets'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -145,7 +145,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/merchandise'));
 
 const merchandiseStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/merchandise'));
+    cb(null, getUploadDir('merchandise'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -195,7 +195,7 @@ const eventUpload = multer({
 // Dedicated app-promo image uploader → uploads/app-promos/
 const appPromoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/app-promos'));
+    cb(null, getUploadDir('app-promos'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -222,7 +222,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/merchandise-categories'))
 
 const merchandiseCategoryStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/merchandise-categories'));
+    cb(null, getUploadDir('merchandise-categories'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -274,7 +274,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/menu-combos'));
 
 const menuComboStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/menu-combos'));
+    cb(null, getUploadDir('menu-combos'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -301,7 +301,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/outlet-hero'));
 
 const outletHeroStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/outlet-hero'));
+    cb(null, getUploadDir('outlet-hero'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -328,7 +328,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/about-hero'));
 
 const aboutHeroStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/about-hero'));
+    cb(null, getUploadDir('about-hero'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -355,7 +355,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/merchandise-banners'));
 
 const merchandiseBannerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/merchandise-banners'));
+    cb(null, getUploadDir('merchandise-banners'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -382,7 +382,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/offers-hero'));
 
 const offersHeroStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/offers-hero'));
+    cb(null, getUploadDir('offers-hero'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -434,7 +434,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/events-hero'));
 
 const eventsHeroStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/events-hero'));
+    cb(null, getUploadDir('events-hero'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -461,7 +461,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/reservation-hero'));
 
 const reservationHeroStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/reservation-hero'));
+    cb(null, getUploadDir('reservation-hero'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -488,7 +488,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/gallery-hero'));
 
 const galleryHeroStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/gallery-hero'));
+    cb(null, getUploadDir('gallery-hero'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -512,7 +512,7 @@ ensureDirectoryExists(path.join(__dirname, '../uploads/gallery'));
 
 const galleryItemStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads/gallery'));
+    cb(null, getUploadDir('gallery'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -536,7 +536,7 @@ const galleryItemUpload = multer({
 ensureDirectoryExists(path.join(__dirname, '../uploads/blog-hero'));
 
 const blogHeroStorage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/blog-hero')); },
+  destination: (req, file, cb) => { cb(null, getUploadDir('blog-hero')); },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `blog-hero-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
@@ -556,7 +556,7 @@ const blogHeroUpload = multer({
 ensureDirectoryExists(path.join(__dirname, '../uploads/blog'));
 
 const blogPostStorage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/blog')); },
+  destination: (req, file, cb) => { cb(null, getUploadDir('blog')); },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `blog-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
@@ -576,7 +576,7 @@ const blogPostUpload = multer({
 ensureDirectoryExists(path.join(__dirname, '../uploads/franchise-hero'));
 
 const franchiseHeroStorage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/franchise-hero')); },
+  destination: (req, file, cb) => { cb(null, getUploadDir('franchise-hero')); },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `franchise-hero-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
@@ -596,7 +596,7 @@ const franchiseHeroUpload = multer({
 ensureDirectoryExists(path.join(__dirname, '../uploads/legal-pages'));
 
 const legalPageStorage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/legal-pages')); },
+  destination: (req, file, cb) => { cb(null, getUploadDir('legal-pages')); },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `legal-page-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
@@ -616,7 +616,7 @@ const legalPageUpload = multer({
 ensureDirectoryExists(path.join(__dirname, '../uploads/corporate-hero'));
 
 const corporateHeroStorage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/corporate-hero')); },
+  destination: (req, file, cb) => { cb(null, getUploadDir('corporate-hero')); },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `corporate-hero-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
@@ -636,7 +636,7 @@ const corporateHeroUpload = multer({
 ensureDirectoryExists(path.join(__dirname, '../uploads/page-heroes'));
 
 const pageHeroStorage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/page-heroes')); },
+  destination: (req, file, cb) => { cb(null, getUploadDir('page-heroes')); },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `page-hero-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
@@ -657,7 +657,7 @@ const pageHeroUpload = multer({
 ensureDirectoryExists(path.join(__dirname, '../uploads/career-hero'));
 
 const careerHeroStorage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/career-hero')); },
+  destination: (req, file, cb) => { cb(null, getUploadDir('career-hero')); },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `career-hero-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
@@ -695,7 +695,7 @@ const popupUpload = multer({
 ensureDirectoryExists(path.join(__dirname, '../uploads/careers/resumes'));
 
 const careerResumeStorage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, path.join(__dirname, '../uploads/careers/resumes')); },
+  destination: (req, file, cb) => { cb(null, getUploadDir('careers/resumes')); },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, `resume-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);

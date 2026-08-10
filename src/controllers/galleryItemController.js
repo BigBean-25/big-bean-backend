@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 const ensureTable = async () => {
   await executeQuery(`
@@ -137,12 +138,12 @@ const update = async (req, res) => {
       : existing[0].video;
 
     if (req.files?.image?.[0] && existing[0].image) {
-      const old = path.join(__dirname, '../', existing[0].image);
-      if (fs.existsSync(old)) fs.unlinkSync(old);
+      const old = resolveUploadFile(existing[0].image);
+      if (old && fs.existsSync(old)) fs.unlinkSync(old);
     }
     if (req.files?.video?.[0] && existing[0].video) {
-      const old = path.join(__dirname, '../', existing[0].video);
-      if (fs.existsSync(old)) fs.unlinkSync(old);
+      const old = resolveUploadFile(existing[0].video);
+      if (old && fs.existsSync(old)) fs.unlinkSync(old);
     }
 
     await executeQuery(`
@@ -173,12 +174,12 @@ const deleteItem = async (req, res) => {
     if (existing.length === 0) return res.status(404).json({ success: false, message: 'Item not found' });
 
     if (existing[0].image) {
-      const p = path.join(__dirname, '../', existing[0].image);
-      if (fs.existsSync(p)) fs.unlinkSync(p);
+      const p = resolveUploadFile(existing[0].image);
+      if (p && fs.existsSync(p)) fs.unlinkSync(p);
     }
     if (existing[0].video) {
-      const p = path.join(__dirname, '../', existing[0].video);
-      if (fs.existsSync(p)) fs.unlinkSync(p);
+      const p = resolveUploadFile(existing[0].video);
+      if (p && fs.existsSync(p)) fs.unlinkSync(p);
     }
 
     await executeQuery('DELETE FROM gallery_items WHERE id = ?', [id]);

@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 const ensureTable = async () => {
   await executeQuery(`
@@ -106,12 +107,12 @@ const updateByPageKey = async (req, res) => {
     if (existing.length) {
       const old = existing[0];
       if (req.files?.hero_image?.[0] && old.hero_image) {
-        const p = path.join(__dirname, '../', old.hero_image);
-        if (fs.existsSync(p)) fs.unlinkSync(p);
+        const p = resolveUploadFile(old.hero_image);
+        if (p && fs.existsSync(p)) fs.unlinkSync(p);
       }
       if (req.files?.mobile_hero_image?.[0] && old.mobile_hero_image) {
-        const p = path.join(__dirname, '../', old.mobile_hero_image);
-        if (fs.existsSync(p)) fs.unlinkSync(p);
+        const p = resolveUploadFile(old.mobile_hero_image);
+        if (p && fs.existsSync(p)) fs.unlinkSync(p);
       }
       if (!heroImage) heroImage = old.hero_image;
       if (!mobileHeroImage) mobileHeroImage = old.mobile_hero_image;

@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 const ensureTable = async () => {
   await executeQuery(`
@@ -134,8 +135,8 @@ const update = async (req, res) => {
     let image = existing[0].image;
     if (req.file) {
       if (image) {
-        const old = path.join(__dirname, '../', image);
-        if (fs.existsSync(old)) fs.unlinkSync(old);
+        const old = resolveUploadFile(image);
+        if (old && fs.existsSync(old)) fs.unlinkSync(old);
       }
       image = `uploads/offers-hero/${req.file.filename}`;
     }
@@ -169,8 +170,8 @@ const remove = async (req, res) => {
     const existing = await executeQuery('SELECT * FROM offers_hero_banners WHERE id=?', [req.params.id]);
     if (!existing.length) return res.status(404).json({ success: false, message: 'Not found' });
     if (existing[0].image) {
-      const imgPath = path.join(__dirname, '../', existing[0].image);
-      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+      const imgPath = resolveUploadFile(existing[0].image);
+      if (imgPath && fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
     }
     await executeQuery('DELETE FROM offers_hero_banners WHERE id=?', [req.params.id]);
     res.json({ success: true, message: 'Deleted' });

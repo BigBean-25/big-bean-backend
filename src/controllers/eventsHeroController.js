@@ -1,4 +1,5 @@
 const { executeQuery } = require('../config/database');
+const { resolveUploadFile } = require('../config/uploadPaths');
 const fs = require('fs');
 const path = require('path');
 
@@ -124,8 +125,8 @@ const update = async (req, res) => {
     let image = existing[0].image;
     if (req.file) {
       if (image) {
-        const oldPath = path.join(__dirname, '../', image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        const oldPath = resolveUploadFile(image);
+        if (oldPath && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       image = `uploads/events-hero/${req.file.filename}`;
     }
@@ -162,8 +163,8 @@ const remove = async (req, res) => {
     const { id } = req.params;
     const existing = await executeQuery('SELECT * FROM event_hero_sections WHERE id = ?', [id]);
     if (existing.length && existing[0].image) {
-      const oldPath = path.join(__dirname, '../', existing[0].image);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      const oldPath = resolveUploadFile(existing[0].image);
+      if (oldPath && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
     }
     await executeQuery('DELETE FROM event_hero_sections WHERE id = ?', [id]);
     res.json({ success: true, message: 'Deleted' });

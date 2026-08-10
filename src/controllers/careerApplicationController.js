@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 const { sendAdminEmailReply, sendAdminWhatsAppReply, getLogs } = require('../services/adminReplyService');
 const { getTemplate, applyVars } = require('../services/replyTemplates');
 const { createAdminNotification } = require('../services/adminNotificationService');
@@ -275,8 +276,8 @@ const deleteApplication = async (req, res) => {
     if (existing.length === 0) return res.status(404).json({ success: false, message: 'Application not found' });
 
     if (existing[0].resume_file) {
-      const fp = path.join(__dirname, '../', existing[0].resume_file);
-      if (fs.existsSync(fp)) fs.unlinkSync(fp);
+      const fp = resolveUploadFile(existing[0].resume_file);
+      if (fp && fs.existsSync(fp)) fs.unlinkSync(fp);
     }
 
     await executeQuery('DELETE FROM career_applications WHERE id=?', [id]);

@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 const ensureTable = async () => {
   await executeQuery(`
@@ -211,8 +212,8 @@ const update = async (req, res) => {
     let imagePath = existing[0].featured_image;
     if (req.file) {
       if (existing[0].featured_image) {
-        const oldPath = path.join(__dirname, '../', existing[0].featured_image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        const oldPath = resolveUploadFile(existing[0].featured_image);
+        if (oldPath && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       }
       imagePath = `uploads/blog/${req.file.filename}`;
     }
@@ -252,8 +253,8 @@ const deletePost = async (req, res) => {
     if (existing.length === 0) return res.status(404).json({ success: false, message: 'Post not found' });
 
     if (existing[0].featured_image) {
-      const imgPath = path.join(__dirname, '../', existing[0].featured_image);
-      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+      const imgPath = resolveUploadFile(existing[0].featured_image);
+      if (imgPath && fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
     }
 
     await executeQuery('DELETE FROM blog_posts WHERE id=?', [id]);

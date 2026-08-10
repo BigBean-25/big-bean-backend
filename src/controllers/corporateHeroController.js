@@ -1,6 +1,7 @@
 const { executeQuery } = require('../config/database');
 const path = require('path');
 const fs = require('fs');
+const { resolveUploadFile } = require('../config/uploadPaths');
 
 let tableReady = false;
 
@@ -157,8 +158,8 @@ const update = async (req, res) => {
     let imagePath = existing.image;
     if (req.file) {
       if (existing.image) {
-        const old = path.join(__dirname, '../../', existing.image.replace(/^\//, ''));
-        if (fs.existsSync(old)) fs.unlinkSync(old);
+        const old = resolveUploadFile(existing.image);
+        if (old && fs.existsSync(old)) fs.unlinkSync(old);
       }
       imagePath = `uploads/corporate-hero/${req.file.filename}`;
     }
@@ -202,8 +203,8 @@ const deleteBanner = async (req, res) => {
     const rows = await executeQuery('SELECT * FROM corporate_hero_banners WHERE id=?', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ success: false, message: 'Banner not found' });
     if (rows[0].image) {
-      const p = path.join(__dirname, '../../', rows[0].image.replace(/^\//, ''));
-      if (fs.existsSync(p)) fs.unlinkSync(p);
+      const p = resolveUploadFile(rows[0].image);
+      if (p && fs.existsSync(p)) fs.unlinkSync(p);
     }
     await executeQuery('DELETE FROM corporate_hero_banners WHERE id=?', [req.params.id]);
     res.json({ success: true, message: 'Banner deleted' });

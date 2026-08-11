@@ -356,17 +356,9 @@ const deleteAdminUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cannot delete your own account' });
     }
 
-    // Prevent deleting Super Admin
+    // Prevent deleting Super Admin (backend hard-stop regardless of frontend guards)
     if (isSuperAdmin(existing[0])) {
       return res.status(403).json({ success: false, message: 'Cannot delete Super Admin' });
-    }
-
-    // Prevent deleting the last active super admin
-    if (isSuperAdmin(existing[0])) {
-      const superAdminCount = await getSuperAdminCount();
-      if (superAdminCount <= 1) {
-        return res.status(400).json({ success: false, message: 'Cannot delete the last Super Admin' });
-      }
     }
 
     await executeQuery('DELETE FROM admin_users WHERE id = ?', [id]);

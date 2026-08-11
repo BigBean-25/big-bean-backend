@@ -34,8 +34,8 @@ const getRolePermissions = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const [role] = await executeQuery('SELECT * FROM admin_roles WHERE id = ?', [id]);
-    if (!role.length) return res.status(404).json({ success: false, message: 'Role not found' });
+    const roles = await executeQuery('SELECT * FROM admin_roles WHERE id = ?', [id]);
+    if (!roles.length) return res.status(404).json({ success: false, message: 'Role not found' });
 
     const permissions = await executeQuery(
       `SELECT arp.*, ap.module_key, ap.module_name, ap.permission_key, ap.permission_name, ap.permission_group
@@ -87,7 +87,7 @@ const updateRole = async (req, res) => {
     const { id } = req.params;
     const { role_name, description, is_active } = req.body;
 
-    const [existing] = await executeQuery('SELECT * FROM admin_roles WHERE id = ?', [id]);
+    const existing = await executeQuery('SELECT * FROM admin_roles WHERE id = ?', [id]);
     if (!existing.length) return res.status(404).json({ success: false, message: 'Role not found' });
 
     // Prevent modifying system roles
@@ -117,11 +117,11 @@ const updateRolePermissions = async (req, res) => {
       return res.status(400).json({ success: false, message: 'permissions must be an array' });
     }
 
-    const [role] = await executeQuery('SELECT * FROM admin_roles WHERE id = ?', [id]);
-    if (!role.length) return res.status(404).json({ success: false, message: 'Role not found' });
+    const roleCheck = await executeQuery('SELECT * FROM admin_roles WHERE id = ?', [id]);
+    if (!roleCheck.length) return res.status(404).json({ success: false, message: 'Role not found' });
 
     // Prevent modifying Super Admin permissions
-    if (role[0].role_key === 'super_admin') {
+    if (roleCheck[0].role_key === 'super_admin') {
       return res.status(403).json({ success: false, message: 'Cannot modify Super Admin permissions' });
     }
 
@@ -160,7 +160,7 @@ const deleteRole = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [existing] = await executeQuery('SELECT * FROM admin_roles WHERE id = ?', [id]);
+    const existing = await executeQuery('SELECT * FROM admin_roles WHERE id = ?', [id]);
     if (!existing.length) return res.status(404).json({ success: false, message: 'Role not found' });
 
     // Prevent deleting system roles
@@ -169,8 +169,8 @@ const deleteRole = async (req, res) => {
     }
 
     // Check if role is assigned to any users
-    const [userCount] = await executeQuery('SELECT COUNT(*) as count FROM admin_users WHERE role_id = ?', [id]);
-    if (userCount[0].count > 0) {
+    const userCountRows = await executeQuery('SELECT COUNT(*) as count FROM admin_users WHERE role_id = ?', [id]);
+    if (userCountRows[0].count > 0) {
       return res.status(400).json({ success: false, message: 'Cannot delete role that is assigned to users' });
     }
 

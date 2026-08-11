@@ -154,7 +154,7 @@ const getAdminUserById = async (req, res) => {
 // ── POST create admin user ────────────────────────────────────────────────────
 const createAdminUser = async (req, res) => {
   try {
-    const { name, email, phone, password, confirm_password, status, designation, permissions } = req.body;
+    const { name, email, phone, password, confirm_password, status, designation, role_id, permissions } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'name, email, and password are required' });
@@ -174,9 +174,9 @@ const createAdminUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const result = await executeQuery(
-      `INSERT INTO admin_users (name, email, phone, password, status, designation, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [name.trim(), email.trim(), phone || null, hashedPassword, status || 'active', designation || null, req.admin?.id || null]
+      `INSERT INTO admin_users (name, email, phone, password, status, designation, role_id, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name.trim(), email.trim(), phone || null, hashedPassword, status || 'active', designation || null, role_id || null, req.admin?.id || null]
     );
 
     const userId = result.insertId;
@@ -196,7 +196,7 @@ const createAdminUser = async (req, res) => {
 const updateAdminUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, password, status, designation, permissions } = req.body;
+    const { name, email, phone, password, status, designation, role_id, permissions } = req.body;
 
     const existing = await executeQuery(
       `SELECT au.id, au.name, au.email, au.phone, au.role_id, au.status, au.last_login_at, au.created_at, au.created_by,
@@ -232,8 +232,8 @@ const updateAdminUser = async (req, res) => {
     }
 
     await executeQuery(
-      `UPDATE admin_users SET name = ?, email = ?, phone = ?, status = ?, designation = ?, updated_at = NOW()${passwordUpdate} WHERE id = ?`,
-      [name.trim(), email.trim(), phone || null, status || user.status, designation || null, ...passwordValues, id]
+      `UPDATE admin_users SET name = ?, email = ?, phone = ?, status = ?, designation = ?, role_id = ?, updated_at = NOW()${passwordUpdate} WHERE id = ?`,
+      [name.trim(), email.trim(), phone || null, status || user.status, designation || null, role_id !== undefined ? (role_id || null) : user.role_id, ...passwordValues, id]
     );
 
     if (permissions && permissions.length) {

@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getAllAdminUsers,
-  getAdminUserById,
   createAdminUser,
   updateAdminUser,
   deleteAdminUser,
@@ -11,11 +9,9 @@ const {
 } = require('../controllers/adminController');
 const { verifyAdminToken, requirePermission } = require('../middleware/authMiddleware');
 
-// Get all admin users with optional filters
-router.get('/users', getAllAdminUsers);
-
-// Get admin user by ID
-router.get('/users/:id', getAdminUserById);
+// NOTE: GET /users and GET /users/:id were removed — they used stale SQL (columns `role`
+// and `last_login` no longer exist) and returned 500. The canonical admin user API is
+// /api/admin-users (adminUserRoutes.js). No frontend code referenced these legacy routes.
 
 // Create new admin user
 router.post('/users', verifyAdminToken, requirePermission('admin_users', 'create'), createAdminUser);

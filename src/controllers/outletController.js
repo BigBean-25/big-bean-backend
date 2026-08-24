@@ -4,10 +4,12 @@ const { executeQuery } = require('../config/database');
  * Actual outlets table columns:
  * id, name, slug, address, phone, email, opening_hours,
  * latitude, longitude, image, status, sort_order, store_branch_id,
+ * seo_title, seo_description, seo_h1, og_title, og_description,
  * created_at, updated_at
  *
  * NOTE: slug column added via migration. store_branch_id added via
- *       add_store_branch_id_to_outlets.sql migration.
+ *       add_store_branch_id_to_outlets.sql migration. SEO fields added
+ *       via add_seo_fields_to_outlets.sql migration.
  *       No description, city, state, postal_code, country, facilities,
  *       map_url, image_url columns. Image column is named "image".
  */
@@ -19,7 +21,9 @@ const getAllOutlets = async (req, res) => {
 
     let query = `SELECT id, name, slug, address, phone, email,
       opening_hours, latitude, longitude, image, status,
-      sort_order, store_branch_id, created_at, updated_at FROM outlets`;
+      sort_order, store_branch_id,
+      seo_title, seo_description, seo_h1, og_title, og_description,
+      created_at, updated_at FROM outlets`;
     const params = [];
     const where = [];
 
@@ -58,7 +62,9 @@ const getOutletById = async (req, res) => {
     const outlet = await executeQuery(
       `SELECT id, name, slug, address, phone, email, opening_hours,
        latitude, longitude, image, status, sort_order,
-       store_branch_id, created_at, updated_at FROM outlets WHERE id = ?`,
+       store_branch_id, seo_title, seo_description, seo_h1,
+       og_title, og_description, created_at, updated_at
+       FROM outlets WHERE id = ?`,
       [id]
     );
 
@@ -86,6 +92,7 @@ const getOutletBySlug = async (req, res) => {
     const outlet = await executeQuery(
       `SELECT id, name, slug, address, phone, email, opening_hours,
        latitude, longitude, image, status, sort_order,
+       seo_title, seo_description, seo_h1, og_title, og_description,
        created_at, updated_at
        FROM outlets WHERE slug = ? AND status = ?`,
       [slug, 'active']
@@ -124,7 +131,12 @@ const createOutlet = async (req, res) => {
       status,
       sort_order,
       slug,
-      store_branch_id
+      store_branch_id,
+      seo_title,
+      seo_description,
+      seo_h1,
+      og_title,
+      og_description
     } = req.body || {};
 
     const cleanName    = (name    || '').trim();
@@ -185,12 +197,20 @@ const createOutlet = async (req, res) => {
       ? slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
       : cleanName.toLowerCase().replace(/^big bean cafe[^a-z]*/i, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || null;
 
+    const cleanSeoTitle       = seo_title       && seo_title.trim()       !== '' ? seo_title.trim()       : null;
+    const cleanSeoDescription = seo_description && seo_description.trim() !== '' ? seo_description.trim() : null;
+    const cleanSeoH1          = seo_h1          && seo_h1.trim()          !== '' ? seo_h1.trim()          : null;
+    const cleanOgTitle        = og_title        && og_title.trim()        !== '' ? og_title.trim()        : null;
+    const cleanOgDescription  = og_description  && og_description.trim()  !== '' ? og_description.trim()  : null;
+
     const result = await executeQuery(
       `INSERT INTO outlets
-        (name, slug, address, phone, email, opening_hours, latitude, longitude, image, status, sort_order, store_branch_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (name, slug, address, phone, email, opening_hours, latitude, longitude, image, status, sort_order, store_branch_id,
+         seo_title, seo_description, seo_h1, og_title, og_description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [cleanName, cleanSlug, cleanAddress, cleanPhone, cleanEmail, cleanOpeningHours,
-       cleanLatitude, cleanLongitude, image, cleanStatus, cleanSortOrder, cleanStoreBranchId]
+       cleanLatitude, cleanLongitude, image, cleanStatus, cleanSortOrder, cleanStoreBranchId,
+       cleanSeoTitle, cleanSeoDescription, cleanSeoH1, cleanOgTitle, cleanOgDescription]
     );
 
     return res.status(201).json({
@@ -248,6 +268,12 @@ const updateOutlet = async (req, res) => {
 
     if (body.slug !== undefined) updateData.slug = (body.slug || '').trim().toLowerCase() || null;
 
+    if (body.seo_title       !== undefined) updateData.seo_title       = (body.seo_title       || '').trim() || null;
+    if (body.seo_description !== undefined) updateData.seo_description = (body.seo_description || '').trim() || null;
+    if (body.seo_h1          !== undefined) updateData.seo_h1          = (body.seo_h1          || '').trim() || null;
+    if (body.og_title        !== undefined) updateData.og_title        = (body.og_title        || '').trim() || null;
+    if (body.og_description  !== undefined) updateData.og_description  = (body.og_description  || '').trim() || null;
+
     if (body.store_branch_id !== undefined) {
       const raw = body.store_branch_id;
       if (raw === null || raw === '' || raw === 'null') {
@@ -267,7 +293,8 @@ const updateOutlet = async (req, res) => {
 
     const allowedFields = [
       'name', 'slug', 'address', 'phone', 'email',
-      'opening_hours', 'latitude', 'longitude', 'status', 'sort_order', 'image', 'store_branch_id'
+      'opening_hours', 'latitude', 'longitude', 'status', 'sort_order', 'image', 'store_branch_id',
+      'seo_title', 'seo_description', 'seo_h1', 'og_title', 'og_description'
     ];
 
     const updateFields = [];

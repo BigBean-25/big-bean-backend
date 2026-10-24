@@ -11,6 +11,7 @@ const {
   getActiveOutlets
 } = require('../controllers/outletController');
 const { outletUpload } = require('../config/multer');
+const outletContent = require('../controllers/outletContentController');
 const { verifyAdminToken, requirePermission } = require('../middleware/authMiddleware');
 
 // Multer wrapper: catches multer errors and returns clean JSON
@@ -37,6 +38,12 @@ router.get('/active', getActiveOutlets);
 // Get outlet by slug (for public pages)
 router.get('/slug/:slug', getOutletBySlug);
 
+// Public per-outlet content (facilities, event space) by slug
+router.get('/slug/:slug/content', outletContent.getPublicBySlug);
+
+// Per-outlet content by id (admin edit form + public-safe payload)
+router.get('/:id/content', outletContent.getByOutletId);
+
 // Get outlet by ID
 router.get('/:id', getOutletById);
 
@@ -51,5 +58,8 @@ router.delete('/:id', verifyAdminToken, requirePermission('outlets', 'delete'), 
 
 // Toggle outlet status
 router.patch('/:id/status', verifyAdminToken, requirePermission('outlets', 'edit'), toggleOutletStatus);
+
+// Save per-outlet content (facilities, event space)
+router.put('/:id/content', verifyAdminToken, requirePermission('outlets', 'edit'), outletContent.upsertByOutletId);
 
 module.exports = router;

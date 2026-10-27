@@ -172,14 +172,19 @@ const createEnquiry = async (req, res) => {
       outlet_name = 'Help me choose';
     }
 
+    const stored_outlet_slug = outlet_slug === 'help-me-choose' ? null : outlet_slug;
+    const stored_event_date = date_not_decided ? null : event_date;
+
     // Soft duplicate protection — identical enquiry within 2 minutes
     const dup = await executeQuery(
       `SELECT id FROM private_event_enquiries
-       WHERE phone = ? AND COALESCE(outlet_slug,'') = COALESCE(?, '') AND occasion = ?
-         AND COALESCE(event_date, '1970-01-01') = COALESCE(?, '1970-01-01')
-         AND created_at > (NOW() - INTERVAL 2 MINUTE)
+       WHERE phone = ?
+         AND outlet_slug <=> ?
+         AND occasion = ?
+         AND event_date <=> ?
+         AND created_at >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)
        LIMIT 1`,
-      [phone, outlet_slug, occasion, date_not_decided ? null : event_date]
+      [phone, stored_outlet_slug, occasion, stored_event_date]
     );
     if (dup.length) {
       const existing = await executeQuery('SELECT enquiry_reference FROM private_event_enquiries WHERE id = ?', [dup[0].id]);
@@ -199,8 +204,8 @@ const createEnquiry = async (req, res) => {
          food_preferences, requirements, venue_visit_requested, enquiry_intent, consent)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
-        enquiry_reference, full_name, phone, email, outlet_id, outlet_slug === 'help-me-choose' ? null : outlet_slug,
-        outlet_name, occasion, date_not_decided ? null : event_date, date_not_decided ? 1 : 0,
+        enquiry_reference, full_name, phone, email, outlet_id, stored_outlet_slug,
+        outlet_name, occasion, stored_event_date, date_not_decided ? 1 : 0,
         preferred_time, duration, guest_count, food_preferences, requirements,
         venue_visit_requested ? 1 : 0, enquiry_intent, 1,
       ]

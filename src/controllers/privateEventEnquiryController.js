@@ -133,7 +133,7 @@ const createEnquiry = async (req, res) => {
     const errors = {};
     if (!full_name || full_name.length < 2) errors.full_name = 'Enter your name.';
     if (!phone || !/^[+]?[\d\s()-]{8,20}$/.test(phone)) errors.phone = 'Enter a valid phone number with country code.';
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address.';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address.';
     if (!outlet_slug) errors.outlet = 'Choose an outlet or Help me choose.';
     if (!occasion || !OCCASIONS.has(occasion)) errors.occasion = 'Choose what you are planning.';
     if (!date_not_decided && (!event_date || !/^\d{4}-\d{2}-\d{2}$/.test(event_date))) {

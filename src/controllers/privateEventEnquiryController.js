@@ -1,6 +1,9 @@
 const { executeQuery } = require('../config/database');
 const { createAdminNotification } = require('../services/adminNotificationService');
 const { getDataScopeFilter } = require('../middleware/authMiddleware');
+const { sendAdminEmailReply } = require('../services/adminReplyService');
+
+const MODULE = 'private_event_enquiries';
 
 let ensured = false;
 
@@ -92,6 +95,13 @@ const generateReference = async () => {
 };
 
 const PUBLIC_STATUSES = ['new', 'contacted', 'qualified', 'quote_sent', 'confirmed', 'closed'];
+
+const OCCASION_LABELS = {
+  birthday: 'birthday party', anniversary: 'anniversary', family: 'family get-together',
+  reunion: 'friends / reunion', corporate: 'corporate / team event', farewell: 'farewell / office celebration',
+  'baby-shower': 'baby shower', engagement: 'engagement / pre-wedding', workshop: 'workshop / meetup',
+  'group-dining': 'group lunch / dinner', other: 'event',
+};
 
 // ── Public: create enquiry ──────────────────────────────────────────
 const createEnquiry = async (req, res) => {
@@ -351,6 +361,48 @@ const deleteEnquiry = async (req, res) => {
   }
 };
 
+// ── Admin: send email reply to the customer ───────────────────────
+const sendEmail = async (req, res) => {
+  try {
+    await ensureTable();
+    const rows = await executeQuery('SELECT * FROM private_event_enquiries WHERE id = ?', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ success: false, message: 'Enquiry not found' });
+    const r = rows[0];
+
+    const occasionLabel = OCCASION_LABELS[r.occasion] || r.occasion || 'your event';
+    const outletLabel = r.outlet_name || 'the selected outlet';
+    const subject = clean(req.body?.subject, 200) ||
+      `Re: Your Big Bean Cafe Event Enquiry – ${r.enquiry_reference}`;
+    const body = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+    const message = body.slice(0, 10000) ||
+      `Hi ${r.full_name},\n\nThank you for your event enquiry with Big Bean Cafe.\n\nWe have received your requirements for ${occasionLabel} at ${outletLabel}. Our team will review the details and get back to you regarding availability, seating and arrangements.\n\nRegards,\nBig Bean Cafe Team`;
+
+    const result = await sendAdminEmailReply({
+      moduleName: MODULE,
+      recordId: r.id,
+      to: r.email,
+      name: r.full_name,
+      subject,
+      message,
+      adminId: (req.admin || req.user)?.id || null,
+    });
+
+    // A successful server-sent reply marks a fresh enquiry as contacted.
+    if (result.success && r.status === 'new') {
+      await executeQuery(
+        "UPDATE private_event_enquiries SET status = 'contacted', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'new'",
+        [r.id]
+      );
+      result.status = 'contacted';
+    }
+
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (e) {
+    console.error('Private event enquiry sendEmail error:', e);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   createEnquiry,
   getAllEnquiries,
@@ -358,4 +410,5 @@ module.exports = {
   updateEnquiry,
   updateStatus,
   deleteEnquiry,
+  sendEmail,
 };

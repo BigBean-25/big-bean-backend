@@ -6,12 +6,20 @@ const fs = require('fs');
 // On Hostinger this must be a path that survives git deployments, e.g.:
 //   UPLOAD_ROOT=/home/<username>/bigbean-uploads
 // Locally defaults to backend/src/uploads (existing behaviour, no change needed).
+// In production without UPLOAD_ROOT, falls back to $HOME/bigbean-uploads (when
+// HOME is set) so uploads still persist across deployments.
 
 const UPLOAD_ROOT = process.env.UPLOAD_ROOT
   ? path.resolve(process.env.UPLOAD_ROOT)
-  : path.join(__dirname, '../uploads');
+  : (process.env.NODE_ENV === 'production' && process.env.HOME)
+    ? path.join(process.env.HOME, 'bigbean-uploads')
+    : path.join(__dirname, '../uploads');
 
-if (process.env.NODE_ENV === 'production' && !process.env.UPLOAD_ROOT) {
+if (
+  process.env.NODE_ENV === 'production' &&
+  !process.env.UPLOAD_ROOT &&
+  !process.env.HOME
+) {
   console.error(
     '[UPLOAD_ROOT] WARNING: UPLOAD_ROOT is not set in production.\n' +
     '  Uploaded files are being stored inside the deployment directory and WILL be\n' +

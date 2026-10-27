@@ -328,7 +328,7 @@ const startServer = async () => {
     // Start server with error handling
     const server = app.listen(PORT, () => {
       console.log(`🚀 Big Bean Café API Server running on port ${PORT}`);
-      console.log(`📁 Uploads directory: ${path.join(__dirname, 'uploads')}`);
+      console.log(`📁 Uploads directory: ${UPLOAD_ROOT}`);
       console.log(`🌐 Server URL: http://localhost:${PORT}`);
     });
     

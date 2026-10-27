@@ -123,7 +123,8 @@ const limiter = rateLimit({
         req.path.startsWith('/api/health') ||
         req.path.startsWith('/api/seo-pages') ||
         req.path.startsWith('/api/website-popups') ||
-        req.path.startsWith('/api/about-founders')
+        req.path.startsWith('/api/about-founders') ||
+        req.path.startsWith('/api/private-events')
       )
     }
     return false
@@ -227,6 +228,10 @@ app.use('/api/corporate-enquiries', require('./routes/corporateEnquiryRoutes'));
 app.use('/api/page-heroes', require('./routes/pageHeroRoutes'));
 app.use('/api/admin/page-heroes', require('./routes/adminPageHeroRoutes'));
 app.use('/api/legal-pages', require('./routes/legalPageRoutes'));
+app.use('/api/private-events', require('./routes/privateEventRoutes'));
+app.use('/api/private-event-enquiries', require('./routes/privateEventEnquiryRoutes'));
+app.use('/api/admin/private-events', require('./routes/adminPrivateEventRoutes'));
+app.use('/api/admin/private-event-enquiries', require('./routes/adminPrivateEventEnquiryRoutes'));
 app.use('/api/newsletter', require('./routes/newsletterRoutes'));
 app.use('/api/customer-auth', require('./routes/customerAuthRoutes'));
 app.use('/api/customer-dashboard', require('./routes/customerDashboardRoutes'));

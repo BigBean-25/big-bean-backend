@@ -731,6 +731,26 @@ const aboutFounderUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }
 });
 
+// Dedicated private-events image uploader → UPLOAD_ROOT/private-events/
+const privateEventsStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, getUploadDir('private-events'));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `private-events-${uniqueSuffix}${path.extname(file.originalname).toLowerCase()}`);
+  }
+});
+const privateEventsUpload = multer({
+  storage: privateEventsStorage,
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only jpg, jpeg, png, webp images are allowed'), false);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
+
 module.exports = {
   upload,
   uploadSingle,
@@ -765,5 +785,6 @@ module.exports = {
   legalPageUpload,
   pageHeroUpload,
   popupUpload,
-  aboutFounderUpload
+  aboutFounderUpload,
+  privateEventsUpload
 };

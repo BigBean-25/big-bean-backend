@@ -45,6 +45,8 @@ const MANAGED_MODULES = new Set([
   'seo',
   // About page
   'about-founders',
+  // Private events (hero + gallery)
+  'private-events',
 ]);
 
 // ── getUploadDir(module) ──────────────────────────────────────────────────────

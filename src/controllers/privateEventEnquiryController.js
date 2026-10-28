@@ -80,6 +80,17 @@ const OCCASIONS = new Set([
 
 const INTENTS = new Set(['general', 'quote', 'venue-visit']);
 
+// The cafe operates on the Bengaluru business calendar (Asia/Kolkata) — never
+// derive "today" from the server's local/UTC date, which rolls over at the
+// wrong moment for IST.
+const todayInBengaluru = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
 // Human-readable public reference: BBC-PE-YYYYMMDD-XXXX
 const generateReference = async () => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -138,6 +149,8 @@ const createEnquiry = async (req, res) => {
     if (!occasion || !OCCASIONS.has(occasion)) errors.occasion = 'Choose what you are planning.';
     if (!date_not_decided && (!event_date || !/^\d{4}-\d{2}-\d{2}$/.test(event_date))) {
       errors.event_date = 'Choose a date or Date not decided.';
+    } else if (!date_not_decided && event_date < todayInBengaluru()) {
+      errors.event_date = 'Please choose today or a future date.';
     }
     if (!Number.isInteger(guest_count) || guest_count < 1 || guest_count > 500) {
       errors.guest_count = 'Enter an expected guest count.';
